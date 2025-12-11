@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>View Request – {{ student_name or req_id }}</title>
+
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/Fjnpa_logo.png') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { padding: 18px; background:#f8f9fa; }
+    .card { box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
+    .meta { font-size: .95rem; color:#444; }
+    .field-label { font-weight:600; color:#222; }
+    .file-preview { border:1px solid #e5e7eb; border-radius:6px; padding:8px; background:#fff; }
+    .btn-row > * { margin-right:8px; }
+    .small-note { font-size:.85rem; color:#666; }
+    .iframe-wrap { height:520px; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="my-3">
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ 'success' if cat=='success' else ('danger' if cat=='danger' else 'info') }}">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Page Heading -->
+  <div class="d-flex align-items-center mb-3">
+    <a class="btn btn-outline-secondary me-2" href="{{ url_for('admin_dashboard') }}">← Back to dashboard</a>
+    <h2 class="mb-0">Application — {{ student_name or req_id }}</h2>
+  </div>
+
+  <div class="row">
+    <!-- LEFT SIDE -->
+    <div class="col-lg-8">
+
+      <!-- Student Details -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Student Details</h5>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="meta"><span class="field-label">Name:</span> {{ student_name or '-' }}</div>
+              <div class="meta"><span class="field-label">Email:</span> {{ email or '-' }}</div>
+              <div class="meta"><span class="field-label">College:</span> {{ college or '-' }}</div>
+              <div class="meta"><span class="field-label">Year / Branch:</span> {{ year or '-' }} / {{ branch or '-' }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="meta"><span class="field-label">Start Date:</span> {{ start_date or '-' }}</div>
+              <div class="meta"><span class="field-label">End Date:</span> {{ end_date or '-' }}</div>
+              <div class="meta"><span class="field-label">Duration:</span> {{ duration or '-' }}</div>
+              <div class="meta"><span class="field-label">Submitted:</span> {{ submission or '-' }}</div>
+              <div class="meta"><span class="field-label">Status:</span>
+                <strong>{{ status or 'Pending' }}</strong>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Permission Letter -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Permission / Uploaded Document</h5>
+
+          {% if permission_filename %}
+            <div class="file-preview">
+
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div><strong>{{ permission_filename }}</strong></div>
+                  <div class="small-note">Stored path: {{ permission_filename }}</div>
+                </div>
+
+                <div class="btn-row">
+                  <a class="btn btn-outline-primary btn-sm"
+                     href="{{ url_for('uploaded_file', filename=permission_filename) }}"
+                     target="_blank">Open</a>
+
+                  <a class="btn btn-outline-secondary btn-sm"
+                     href="{{ url_for('uploaded_file', filename=permission_filename) }}"
+                     download>Download</a>
+                </div>
+              </div>
+
+              {% if permission_filename.lower().endswith('.pdf') %}
+                <div class="iframe-wrap mt-3">
+                  <iframe src="{{ url_for('uploaded_file', filename=permission_filename) }}"
+                          style="width:100%; height:100%; border:0;"
+                          title="Permission PDF"></iframe>
+                </div>
+              {% endif %}
+
+            </div>
+
+          {% else %}
+            <div class="alert alert-warning">No uploaded permission file found for this request.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Internship Letter -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Generated Internship Letter</h5>
+
+          {% set st = (status or '').lower() %}
+
+          {% if st == 'approved' %}
+            <p class="small-note">This request is approved. You can download or open the generated internship letter below.</p>
+
+            <div class="btn-row">
+              <a class="btn btn-outline-primary"
+                 href="{{ url_for('download_letter', req_id=req_id) }}"
+                 target="_blank">Download Letter (PDF)</a>
+
+              {% if generated_filename %}
+                <a class="btn btn-outline-secondary"
+                   href="{{ url_for('serve_generated', filename=generated_filename) }}"
+                   target="_blank">Open Letter</a>
+              {% endif %}
+            </div>
+
+          {% elif st == 'pending' %}
+            <p class="small-note">No letter is available yet. Approve the request to generate the internship letter.</p>
+            <div class="btn-row">
+              <form method="post" action="{{ url_for('admin_approve', req_id=req_id) }}">
+                <button type="submit" class="btn btn-success btn-sm">Approve & Generate</button>
+              </form>
+            </div>
+
+          {% else %}
+            {# Rejected → show NOTHING related to download #}
+            <div class="alert alert-secondary">
+              This request has been <strong>rejected</strong>. No internship letter will be generated.
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div> <!-- /.col -->
+
+    <!-- RIGHT SIDE -->
+    <div class="col-lg-4">
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="card-title">Admin Actions</h6>
+
+          <form method="post" action="{{ url_for('admin_approve', req_id=req_id) }}">
+            <button type="submit" class="btn btn-success w-100 mb-2">Approve</button>
+          </form>
+
+          <form method="post" action="{{ url_for('admin_reject', req_id=req_id) }}">
+            <button type="submit" class="btn btn-danger w-100 mb-2">Reject</button>
+          </form>
+
+          <a class="btn btn-secondary w-100" href="{{ url_for('admin_dashboard') }}">Back to Dashboard</a>
+
+          <hr>
+
+          <h6>Quick Info</h6>
+          <ul class="list-unstyled small-note">
+            <li><strong>Request ID:</strong> {{ req_id }}</li>
+            <li><strong>Submitted:</strong> {{ submission or '-' }}</li>
+            <li><strong>Current Status:</strong> {{ status or '-' }}</li>
+          </ul>
+        </div>
+      </div>
+
+    </div><!-- /.col -->
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
