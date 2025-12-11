@@ -1,6 +1,4 @@
 
-# ✅ **FINAL README.md (Copy–Paste as is)**
-
 ```md
 # JNPA Internship Letter Generator
 
