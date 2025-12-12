@@ -1,178 +1,156 @@
-```md
 # 🚢 JNPA Internship Letter Generator
 
-A Flask-based web app to generate **official Internship Permission Letters** for the **Jawaharlal Nehru Port Authority (JNPA)**.  
-Generates bilingual (Hindi + English) letters with correct Devanagari fonts, clean A4 layout, header/footer, and PDF export.
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue) ![Flask](https://img.shields.io/badge/Framework-Flask-green) ![License](https://img.shields.io/badge/License-Internal_Use-orange)
 
-> Copy-paste this file as `README.md` at the root of your repo.
+A specialized Flask-based web application designed to automate the generation of **official Internship Permission Letters** for the **Jawaharlal Nehru Port Authority (JNPA)**.
 
----
-
-## ✨ Features
-
-- 📄 Generate official JNPA Internship Letters (bilingual)
-- 🇮🇳 Devanagari (Hindi) font support
-- 🧾 Auto-filled student info, internship period, and college details
-- 📐 A4-friendly layout with margins, header, footer
-- 🖨️ PDF export using `wkhtmltopdf` (or compatible engine)
-- 🛠️ Simple admin UI to review requests and produce letters
-- 🗂️ Static assets support for logos, fonts, and decorative patterns
+This tool streamlines the administrative process by generating bilingual (Hindi + English) letters with precise A4 formatting, correct Devanagari font rendering, and instant PDF export capabilities.
 
 ---
 
-## 📁 Project structure
+## ✨ Key Features
 
-```
+* **📄 PDF Automation:** Generates high-quality, printable PDFs using `wkhtmltopdf`.
+* **🇮🇳 Bilingual Support:** Full support for Devanagari script (Hindi) alongside English.
+* **📐 Precision Layout:** Custom A4 CSS styling with correct margins for official headers/footers.
+* **📝 Form Automation:** Auto-fills student details, reference numbers, and dates.
+* **🛠️ Admin Dashboard:** Simple interface to review requests and generate documents.
+* **🗂️ Static Asset Management:** Handles official logos and custom fonts securely.
 
+---
+
+## 📁 Project Structure
+
+```text
 jnpa-internship-letter-generator/
 │
-├── app.py
-├── config.py
-├── requirements.txt
-├── README.md
-├── .gitignore
+├── app.py                   # Main Flask application entry point
+├── config.py                # Configuration settings
+├── requirements.txt         # Python dependencies
+├── README.md                # Project documentation
+├── .gitignore               # Git ignore rules
 │
 ├── static/
-│   ├── fonts/           # Devanagari and other fonts
-│   └── img/             # logos, patterns
+│   ├── fonts/               # .ttf files (e.g., NotoSansDevanagari)
+│   ├── css/                 # Custom styles for the web view
+│   └── img/                 # JNPA Logos and signatures
 │
 ├── templates/
-│   ├── admin.html
-│   ├── form.html
-│   ├── internship_letter.html
-│   ├── login.html
-│   └── view_request.html
+│   ├── admin.html           # Admin dashboard
+│   ├── form.html            # Student input form
+│   ├── internship_letter.html # The HTML template for the PDF
+│   └── login.html           # Admin authentication
 │
-├── uploads/             # user uploads (ignored in git)
-└── generated_letters/   # generated PDFs (ignored in git)
-
+├── uploads/                 # Temporary storage for user docs (ignored by git)
+└── generated_letters/       # Output folder for PDFs (ignored by git)
 ````
 
----
+-----
 
-## ⚙️ Quick install & run (copy-paste)
+## ⚙️ Installation & Setup
 
-### 1. Clone repository
+### 1\. System Prerequisite (Crucial)
+
+This project requires **`wkhtmltopdf`** to convert HTML to PDF. This is a system-level binary, not just a Python package.
+
+  * **Windows:** Download the installer from [wkhtmltopdf.org](https://wkhtmltopdf.org/downloads.html).
+      * *Note:* After installing, add the `bin` folder (e.g., `C:\Program Files\wkhtmltopdf\bin`) to your System PATH variables.
+  * **Linux (Debian/Ubuntu):**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install wkhtmltopdf
+    ```
+  * **macOS:**
+    ```bash
+    brew install --cask wkhtmltopdf
+    ```
+
+### 2\. Clone the Repository
+
 ```bash
-git clone https://github.com/<your-username>/jnpa-internship-letter-generator.git
+git clone [https://github.com/your-username/jnpa-internship-letter-generator.git](https://github.com/your-username/jnpa-internship-letter-generator.git)
 cd jnpa-internship-letter-generator
-````
+```
 
-### 2. Create & activate virtualenv
+### 3\. Set up Virtual Environment
 
-**Windows**
+**Windows:**
 
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-**macOS / Linux**
+**macOS / Linux:**
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Install requirements
+### 4\. Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Install `wkhtmltopdf` (required for PDF)
+### 5\. Configuration
 
-Download from: [https://wkhtmltopdf.org/downloads.html](https://wkhtmltopdf.org/downloads.html)
-Make sure the `wkhtmltopdf` binary is accessible via your system `PATH`.
+Ensure you have the required fonts. Download a Hindi-supporting font (like **Noto Sans Devanagari**) and place the `.ttf` file in:
+`static/fonts/NotoSansDevanagari-Regular.ttf`
 
-### 5. Start the app
-
-**Optional (set env var):**
+### 6\. Run the Application
 
 ```bash
-# Windows
-set FLASK_APP=app.py
+# Set Flask app environment variable
+export FLASK_APP=app.py  # macOS/Linux
+set FLASK_APP=app.py     # Windows CMD
+$env:FLASK_APP = "app.py" # Windows PowerShell
 
-# macOS / Linux
-export FLASK_APP=app.py
-```
-
-**Run**
-
-```bash
+# Run
 flask run
 ```
 
-Open your browser: `http://127.0.0.1:5000`
+Access the app at: `http://127.0.0.1:5000`
 
----
+-----
 
-## 🔧 Configuration tips
+## 🔧 Troubleshooting & Tips
 
-* Put Devanagari/Unicode fonts (e.g., `NotoSansDevanagari-Regular.ttf`) in:
+### 1\. Hindi Characters appear as squares (□□□)
 
-  ```
-  static/fonts/
-  ```
+This usually happens if `wkhtmltopdf` cannot find the font file on the server.
 
-  Reference them in your `internship_letter.html` with `@font-face` so wkhtmltopdf picks them up.
+  * **Solution:** In `internship_letter.html`, use absolute system paths for the `@font-face` URL, or ensure the `.ttf` file is physically present in `static/fonts/`.
 
-* Put logos in:
+### 2\. `wkhtmltopdf` not found error
 
-  ```
-  static/img/
-  ```
+  * **Solution:** If using `pdfkit` in Python, you may need to manually point to the binary configuration in `app.py`:
+    ```python
+    path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+    config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+    pdfkit.from_string(html, 'out.pdf', configuration=config)
+    ```
 
-* Ensure `generated_letters/` and `uploads/` are writeable by the Flask process.
+### 3\. CSS not loading in PDF
 
----
+  * **Solution:** PDF generators often struggle with external CSS sheets. It is best practice to include your CSS inside `<style>` tags directly within the `internship_letter.html` template.
 
-## ✅ Example `.gitignore` (copy-paste into `.gitignore`)
+-----
 
-```
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.sqlite3
-generated_letters/
-uploads/
-.env
-*.log
-*.pdf
-```
+## 🤝 Contributing
 
----
+1.  Fork the repository.
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to the branch (`git push origin feature/AmazingFeature`).
+5.  Open a Pull Request.
 
-## 🧩 Minimal `requirements.txt` example
-
-```
-Flask>=2.0
-Flask-WTF
-pdfkit
-wkhtmltopdf  # optional note: actual wkhtmltopdf is a system binary, not a pip package
-```
-
-> Recommended real-world libs you may already use: `Flask`, `pdfkit` (Python wrapper), `Jinja2` (Flask uses it), `Werkzeug`. Adjust versions as needed.
-
----
-
-## 💡 Helpful tips & gotchas
-
-* `wkhtmltopdf` must be the correct architecture for your OS. If PDFs look wrong (fonts missing), point `pdfkit` / wkhtmltopdf to fonts via absolute file paths and use `@font-face` in the HTML/CSS.
-* If you see strange characters in Hindi, confirm the letter HTML uses `<meta charset="utf-8">`, fonts are declared, and the PDF engine can access them.
-* When testing locally, open the HTML `internship_letter.html` in browser to verify layout before PDF generation.
-
----
+-----
 
 ## 🧾 License
 
-This repository is intended for **educational and internal use only**.
-
----
-
-
+This project is intended for **internal and educational use** at JNPA.
 
 ```
 ```
