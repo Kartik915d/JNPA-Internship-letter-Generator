@@ -289,6 +289,29 @@ def download_letter(req_id):
 def health():
     return "OK", 200
 
+
+
+@app.route("/admin/open-letter/<req_id>")
+@admin_required
+def open_letter(req_id):
+    doc = db.collection(COLLECTION).document(req_id).get()
+    if not doc.exists:
+        abort(404)
+
+    data = doc.to_dict() or {}
+    if (data.get("status") or "").lower() != "approved":
+        abort(403)
+
+    fname = data.get("generated_letter_filename")
+    if not fname:
+        abort(404)
+
+    pdf_path = Path(GENERATED_FOLDER) / fname
+    if not pdf_path.is_file():
+        abort(404)
+
+    return send_file(pdf_path, mimetype="application/pdf")
+
 # --------------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
