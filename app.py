@@ -1,5 +1,6 @@
 # app.py
 import os
+import json
 import logging
 import base64
 from datetime import datetime
@@ -26,12 +27,15 @@ from firebase_admin import credentials, firestore
 import config
 import dotenv
 
+# --------------------------------------------------
+# ENV + LOGGING
+# --------------------------------------------------
 dotenv.load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --------------------------------------------------
-# APP
+# FLASK APP
 # --------------------------------------------------
 app = Flask(__name__)
 app.config.from_object(config)
@@ -39,6 +43,9 @@ app.secret_key = app.config.get('SECRET_KEY', os.environ.get('FLASK_SECRET', 'de
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
 
+# --------------------------------------------------
+# FOLDERS
+# --------------------------------------------------
 UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER', 'uploads')
 GENERATED_FOLDER = app.config.get('GENERATED_FOLDER', 'generated_letters')
 
@@ -47,48 +54,56 @@ os.makedirs(GENERATED_FOLDER, exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_FOLDER, 'permission_letters'), exist_ok=True)
 
 # --------------------------------------------------
-# FIREBASE
+# FIREBASE INIT (RAILWAY + LOCAL SAFE)
 # --------------------------------------------------
-cred_path = os.getenv("FIREBASE_CREDENTIALS")
-if not cred_path or not os.path.isfile(cred_path):
-    raise RuntimeError("FIREBASE_CREDENTIALS not set correctly")
+firebase_cred = os.environ.get("FIREBASE_CREDENTIALS")
+if not firebase_cred:
+    raise RuntimeError("FIREBASE_CREDENTIALS env var not set")
 
-cred = credentials.Certificate(cred_path)
+try:
+    # Railway: JSON string
+    cred_dict = json.loads(firebase_cred)
+    cred = credentials.Certificate(cred_dict)
+except json.JSONDecodeError:
+    # Local: file path
+    if not os.path.isfile(firebase_cred):
+        raise RuntimeError("Invalid FIREBASE_CREDENTIALS value")
+    cred = credentials.Certificate(firebase_cred)
+
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-COLLECTION = "internship_requests"
+# --------------------------------------------------
+# CONSTANTS / HELPERS
+# --------------------------------------------------
 ALLOWED_EXT = {"pdf"}
+COLLECTION = "internship_requests"
 
-# --------------------------------------------------
-# HELPERS
-# --------------------------------------------------
-def allowed_file(fn):
-    return "." in fn and fn.rsplit(".", 1)[1].lower() in ALLOWED_EXT
+def allowed_file(filename: str) -> bool:
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
-def to_obj(d):
+def to_obj(d: dict):
     return SimpleNamespace(**d)
 
 def admin_required(f):
     @wraps(f)
-    def wrap(*a, **kw):
-        if not session.get("admin_logged_in"):
-            return redirect(url_for("admin_login"))
-        return f(*a, **kw)
-    return wrap
+    def inner(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return inner
 
-def image_to_data_uri(path):
-    p = Path(path)
-    if not p.is_file():
+def image_to_data_uri(path: Path):
+    if not path.is_file():
         return None
-    data = p.read_bytes()
-    mime = "image/png" if p.suffix.lower() == ".png" else "image/jpeg"
+    data = path.read_bytes()
+    mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
     return f"data:{mime};base64," + base64.b64encode(data).decode()
 
 # --------------------------------------------------
-# PUBLIC
+# PUBLIC ROUTES
 # --------------------------------------------------
 @app.route('/')
 def index():
@@ -96,47 +111,47 @@ def index():
     for c, m in msgs:
         if c != "login":
             flash(m, c)
-    return render_template("form.html")
+    return render_template('form.html')
 
 # --------------------------------------------------
 # ADMIN AUTH
 # --------------------------------------------------
 @app.route('/admin/login', methods=['GET','POST'])
 def admin_login():
-    if request.method == "POST":
-        if (request.form.get("username") == app.config.get("ADMIN_USERNAME") and
-            request.form.get("password") == app.config.get("ADMIN_PASSWORD")):
-            session["admin_logged_in"] = True
-            flash("Logged in successfully", "login")
-            return redirect(url_for("admin_dashboard"))
-        flash("Invalid credentials", "danger")
-    return render_template("login.html")
+    if request.method == 'POST':
+        if (request.form.get('username') == app.config.get('ADMIN_USERNAME') and
+            request.form.get('password') == app.config.get('ADMIN_PASSWORD')):
+            session['admin_logged_in'] = True
+            flash('Logged in successfully.', 'login')
+            return redirect(url_for('admin_dashboard'))
+        flash('Invalid credentials.', 'danger')
+    return render_template('login.html')
 
 @app.route('/admin/logout')
 def admin_logout():
     session.clear()
-    flash("Logged out", "info")
-    return redirect(url_for("admin_login"))
+    flash('Logged out.', 'info')
+    return redirect(url_for('admin_login'))
 
 # --------------------------------------------------
-# DASHBOARD
+# ADMIN DASHBOARD
 # --------------------------------------------------
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
     docs = db.collection(COLLECTION).order_by(
-        "created_at", direction=firestore.Query.DESCENDING
+        'created_at', direction=firestore.Query.DESCENDING
     ).stream()
     rows = []
     for d in docs:
-        x = d.to_dict()
-        x["doc_ref_id"] = d.id
-        x["status"] = (x.get("status") or "pending").lower()
-        rows.append(to_obj(x))
-    return render_template("admin.html", requests=rows)
+        data = d.to_dict() or {}
+        data['doc_ref_id'] = d.id
+        data['status'] = (data.get('status') or 'pending').lower()
+        rows.append(to_obj(data))
+    return render_template('admin.html', requests=rows)
 
 # --------------------------------------------------
-# VIEW REQUEST (🔥 FIXED)
+# VIEW REQUEST (CRITICAL FIX)
 # --------------------------------------------------
 @app.route('/admin/view/<req_id>')
 @admin_required
@@ -145,7 +160,7 @@ def admin_view(req_id):
     if not doc.exists:
         abort(404)
 
-    data = doc.to_dict()
+    data = doc.to_dict() or {}
 
     status = (data.get("status") or "pending").lower()
 
@@ -171,7 +186,7 @@ def admin_view(req_id):
     )
 
 # --------------------------------------------------
-# PREVIEW GENERATED LETTER (🔥 NEW)
+# PREVIEW GENERATED LETTER
 # --------------------------------------------------
 @app.route('/admin/preview/<req_id>')
 @admin_required
@@ -251,7 +266,7 @@ def admin_reject(req_id):
     return redirect(url_for("admin_view", req_id=req_id))
 
 # --------------------------------------------------
-# FILE SERVE
+# FILE SERVING
 # --------------------------------------------------
 @app.route('/uploads/<path:filename>')
 @admin_required
@@ -270,5 +285,13 @@ def download_letter(req_id):
     return send_file(path, as_attachment=True)
 
 # --------------------------------------------------
-if __name__ == "__main__":
+# HEALTH CHECK (RAILWAY SAFE)
+# --------------------------------------------------
+@app.route('/health')
+def health():
+    return "OK", 200
+
+# --------------------------------------------------
+if __name__ == '__main__':
+    logger.info("Starting Flask + Firestore JNPA app")
     app.run(debug=True)
