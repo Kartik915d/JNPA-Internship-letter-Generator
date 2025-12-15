@@ -14,8 +14,7 @@ from flask import (
     send_from_directory, send_file, abort, get_flashed_messages, jsonify, current_app
 )
 from werkzeug.utils import secure_filename
-
-import pdfkit           # pip install pdfkit
+# pip install pdfkit
 # Optional fallback (pure-Python)
 try:
     from weasyprint import HTML as WeasyHTML  # pip install WeasyPrint
@@ -368,188 +367,47 @@ def debug_list_uploads():
 # -----------------------
 @app.route('/admin/approve/<string:req_id>', methods=['POST'])
 @admin_required
+@app.route('/admin/approve/<req_id>', methods=['POST'])
+@admin_required
 def admin_approve(req_id):
+    doc_ref = db.collection(COLLECTION).document(req_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        abort(404)
+
+    data = doc.to_dict()
+    issued = datetime.utcnow().strftime('%d-%m-%Y')
+
+    header_img = image_to_data_uri(
+        Path(app.static_folder) / "img/Fjnpa_logo.png"
+    )
+
+    html = render_template(
+        "internship_letter.html",
+        **data,
+        letter_year=datetime.utcnow().year,
+        issued_date=issued,
+        header_image=header_img
+    )
+
+    pdf_name = f"offer_{req_id}.pdf"
+    pdf_path = Path(GENERATED_FOLDER) / pdf_name
+
     try:
-        # --- 1) fetch document (by doc ref id, fallback to doc_id field) ---
-        doc_ref = db.collection(COLLECTION).document(req_id)
-        doc = doc_ref.get()
-        if not doc.exists:
-            query = db.collection(COLLECTION).where('doc_id', '==', req_id).limit(1).stream()
-            found = None
-            for d in query:
-                found = d
-                break
-            if not found:
-                msg = "Request not found."
-                logger.warning("admin_approve: %s %s", req_id, msg)
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({"error": msg}), 404
-                flash(msg, 'danger')
-                return redirect(url_for('admin_dashboard'))
-            doc_ref = db.collection(COLLECTION).document(found.id)
-            doc = doc_ref.get()
-
-        data = doc.to_dict() or {}
-        logger.info("admin_approve: preparing to approve doc %s (data keys: %s)", doc_ref.id, list(data.keys()))
-
-        # If already approved - return download URL
-        if (data.get('status') or '').lower() == 'approved':
-            download_url = url_for('download_letter', req_id=doc_ref.id, _external=True)
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({"message": "Already approved", "download_url": download_url}), 200
-            flash('Request already approved.', 'info')
-            return redirect(url_for('admin_view', req_id=doc_ref.id))
-
-        # --- 2) Prepare variables for the letter template ---
-        student_name = data.get('student_name') or data.get('name') or ""
-        student_id = data.get('student_id') or data.get('roll_no') or data.get('admission_no') or data.get('reg_no') or data.get('email') or ""
-        college_name = data.get('college_name') or data.get('college') or ""
-        college_address = data.get('college_address') or data.get('college_add') or data.get('college_address_line') or ""
-        college_city = data.get('college_city') or data.get('college_city_name') or ""
-        reference_date = data.get('reference_date') or data.get('ref_date') or data.get('submission_date') or ""
-        duration = data.get('duration') or ""
-        start_date = data.get('start_date') or ""
-        end_date = data.get('end_date') or ""
-        branch = data.get('branch') or ""
-        student_year = data.get('student_year') or ""
-        letter_date = data.get('letter_date') or data.get('issued_date') or None
-        college_phone = data.get('college_phone') or data.get('college_contact') or ""
-        supervisor = data.get('supervisor') or ""
-        extra_notes = data.get('notes') or data.get('remarks') or ""
-
-        # --- 3) Prepare output paths & header image data-uri ---
-        gen_folder = Path(app.config.get('GENERATED_FOLDER', 'generated_letters')).resolve()
-        gen_folder.mkdir(parents=True, exist_ok=True)
-        pdf_filename = f"offer_{doc_ref.id}.pdf"
-        pdf_path = gen_folder / pdf_filename
-
-        # prepare header image as base64 data URI (preferred)
-        header_image = None
-        # check common static file names - prefer the exact Fjnpa_logo.png the template references
-        candidates = [
-            Path(app.static_folder) / 'img' / 'Fjnpa_logo.png',
-            Path(app.static_folder) / 'img' / 'jnpa_letterhead.jpeg',
-            Path(app.static_folder) / 'img' / 'jnpa_letterhead.jpg',
-            Path(app.static_folder) / 'img' / 'letter_head.png',
-            Path(app.static_folder) / 'img' / 'letterhead.png'
-        ]
-        for cand in candidates:
-            try:
-                if cand.exists() and cand.is_file():
-                    try:
-                        header_image = image_to_data_uri(str(cand))
-                        break
-                    except Exception as e:
-                        logger.warning("Failed to convert header image to data-uri for %s: %s", cand, e)
-            except Exception:
-                continue
-
-        # issued_date for top-right & dtd
-        issued = datetime.utcnow().strftime('%d-%m-%Y')
-
-        # ensure latest template is used (clear Jinja template cache)
-        try:
-            app.jinja_env.cache.clear()
-        except Exception:
-            pass
-
-        # --- 4) Render the letter HTML with all fields available (pass header_image & issued_date) ---
-        html = render_template(
-            'internship_letter.html',
-            letter_year = datetime.utcnow().year,
-            issued_date = issued,
-            header_image = header_image,   # may be None -> template falls back to url_for static
-            college_name = college_name,
-            college_address = college_address,
-            college_city = college_city,
-            college_phone = college_phone,
-            reference_date = reference_date,
-            student_name = student_name,
-            student_roll_or_id = student_id,
-            branch = branch,
-            student_year = student_year,
-            duration = duration,
-            start_date = start_date,
-            end_date = end_date,
-            supervisor = supervisor,
-            notes = extra_notes
-        )
-
-        # --- 5) Generate PDF with pdfkit (wkhtmltopdf) or fallback to WeasyPrint ---
-        pdf_generated = False
-        wk_path = app.config.get('WKHTMLTOPDF_PATH')  # optional config in config.py
-
-        try:
-            pdf_conf = None
-            if wk_path:
-                pdf_conf = pdfkit.configuration(wkhtmltopdf=wk_path)
-            options = {
-                'page-size': 'A4',
-                'encoding': "UTF-8",
-                # local file access not needed when embedding base64, but keep it for safety if static file path used:
-                'enable-local-file-access': None,
-                'quiet': None
-            }
-            # Overwrite existing file if present
-            pdfkit.from_string(html, str(pdf_path), configuration=pdf_conf, options=options)
-            pdf_generated = True
-            logger.info("admin_approve: PDF generated via wkhtmltopdf at %s", str(pdf_path))
-        except Exception as e:
-            logger.warning("pdfkit/wkhtmltopdf generation failed: %s", e)
-            # Try WeasyPrint fallback if available
-            if WEASY_AVAILABLE:
-                try:
-                    weasy_html = WeasyHTML(string=html, base_url=request.host_url)
-                    weasy_html.write_pdf(str(pdf_path))
-                    pdf_generated = True
-                    logger.info("admin_approve: PDF generated via WeasyPrint at %s", str(pdf_path))
-                except Exception as e2:
-                    logger.exception("WeasyPrint fallback also failed: %s", e2)
-                    raise
-            else:
-                # No fallback available -> re-raise original exception
-                raise
-
-        if not pdf_generated:
-            raise RuntimeError("Failed to generate PDF with both wkhtmltopdf and WeasyPrint.")
-
-        # --- 6) Update Firestore doc with metadata and status ---
-        update_payload = {
-            'status': 'approved',
-            'generated_letter_filename': pdf_filename,
-            'generated_letter_path': str(pdf_path),
-            'approved_at': datetime.utcnow().isoformat(),
-            'issued_date': issued
-        }
-        doc_ref.update(update_payload)
-        logger.info("admin_approve: Firestore updated for %s", doc_ref.id)
-
-        download_url = url_for('download_letter', req_id=doc_ref.id, _external=True)
-
-        # --- 7) Respond appropriately (AJAX or normal form) ---
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({"message": "Approved and letter generated.", "download_url": download_url}), 200
-
-        flash('Request approved and letter generated. Use "Download Letter" to save the PDF.', 'success')
-        return redirect(url_for('admin_view', req_id=doc_ref.id))
-
+        WeasyHTML(string=html, base_url=request.host_url).write_pdf(pdf_path)
     except Exception as e:
-        logger.exception("Error approving request: %s", str(e))
-        # revert to pending if partial
-        try:
-            # doc_ref may not be defined if failure happened early; guard it
-            if 'doc_ref' in locals():
-                doc_ref.update({'status': 'pending'})
-        except Exception:
-            pass
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({"error": str(e)}), 500
-        flash(f"Error approving request: {str(e)}", 'danger')
-        # if possible redirect back to admin view for the same req_id
-        try:
-            return redirect(url_for('admin_view', req_id=req_id))
-        except Exception:
-            return redirect(url_for('admin_dashboard'))
+        logger.exception("WeasyPrint failed")
+        flash("PDF generation failed", "danger")
+        return redirect(url_for('admin_view', req_id=req_id))
+
+    doc_ref.update({
+        "status": "approved",
+        "generated_letter_filename": pdf_name,
+        "issued_date": issued
+    })
+
+    flash("Approved & letter generated", "success")
+    return redirect(url_for('admin_view', req_id=req_id))
 
 
 @app.route('/admin/reject/<string:req_id>', methods=['POST'])
