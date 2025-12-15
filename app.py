@@ -7,20 +7,15 @@ from datetime import datetime
 from types import SimpleNamespace
 from functools import wraps
 from pathlib import Path
-from io import BytesIO
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, session,
-    send_from_directory, send_file, abort, get_flashed_messages, jsonify, current_app
+    send_file, abort, get_flashed_messages, jsonify
 )
 from werkzeug.utils import secure_filename
-# pip install pdfkit
-# Optional fallback (pure-Python)
-try:
-    from weasyprint import HTML as WeasyHTML  # pip install WeasyPrint
-    WEASY_AVAILABLE = True
-except Exception:
-    WEASY_AVAILABLE = False
+
+# ✅ WeasyPrint (Render-compatible)
+from weasyprint import HTML as WeasyHTML
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -28,41 +23,42 @@ from firebase_admin import credentials, firestore
 import config
 import dotenv
 
-# load .env
+# --------------------------------------------------
+# ENV + LOGGING
+# --------------------------------------------------
 dotenv.load_dotenv()
-
-# logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Flask app
+# --------------------------------------------------
+# FLASK APP
+# --------------------------------------------------
 app = Flask(__name__)
 app.config.from_object(config)
 app.secret_key = app.config.get('SECRET_KEY', os.environ.get('FLASK_SECRET', 'dev-secret'))
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
 
-# Defaults for folders
+# --------------------------------------------------
+# FOLDERS
+# --------------------------------------------------
 UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER', 'uploads')
 GENERATED_FOLDER = app.config.get('GENERATED_FOLDER', 'generated_letters')
 
-# Ensure folders exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(GENERATED_FOLDER, exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_FOLDER, 'permission_letters'), exist_ok=True)
 
-# Firestore init
+# --------------------------------------------------
+# FIREBASE INIT
+# --------------------------------------------------
 firebase_cred = os.environ.get("FIREBASE_CREDENTIALS")
-
 if not firebase_cred:
     raise RuntimeError("FIREBASE_CREDENTIALS env var not set")
 
 try:
-    # Render / cloud
-    cred_dict = json.loads(firebase_cred)
-    cred = credentials.Certificate(cred_dict)
+    cred = credentials.Certificate(json.loads(firebase_cred))
 except json.JSONDecodeError:
-    # Local machine
     if not os.path.isfile(firebase_cred):
         raise RuntimeError("Invalid FIREBASE_CREDENTIALS value")
     cred = credentials.Certificate(firebase_cred)
@@ -72,12 +68,12 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-
-# constants
-ALLOWED_EXT = {'pdf'}
+# --------------------------------------------------
+# CONSTANTS / HELPERS
+# --------------------------------------------------
+ALLOWED_EXT = {"pdf"}
 COLLECTION = "internship_requests"
 
-# helpers
 def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
@@ -85,38 +81,28 @@ def to_obj(d: dict):
     return SimpleNamespace(**d)
 
 def admin_required(f):
-    from functools import wraps
     @wraps(f)
     def inner(*args, **kwargs):
         if not session.get('admin_logged_in'):
-            return redirect(url_for('admin_login', next=request.url))
+            return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return inner
 
-def image_to_data_uri(path: str) -> str:
-    """
-    Read an image from disk and return a data URI (base64). Raises FileNotFoundError if missing.
-    """
-    p = Path(path)
-    if not p.is_file():
-        raise FileNotFoundError(f"Image not found: {path}")
-    with p.open("rb") as f:
-        data = f.read()
-    ext = p.suffix.lower()
-    mime = "image/png" if ext == ".png" else "image/jpeg"
+def image_to_data_uri(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    data = path.read_bytes()
+    mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
     return f"data:{mime};base64," + base64.b64encode(data).decode()
 
-# -----------------------
-# Public form routes
-# -----------------------
+# --------------------------------------------------
+# PUBLIC ROUTES
+# --------------------------------------------------
 @app.route('/', methods=['GET'])
 def index():
-    # Consume login flashes so admin-login messages don't show on the public form.
     all_msgs = get_flashed_messages(with_categories=True)
     for cat, msg in all_msgs:
-        if cat == 'login':
-            continue
-        else:
+        if cat != 'login':
             flash(msg, cat)
     return render_template('form.html')
 
@@ -129,53 +115,29 @@ def submit():
         start_date = request.form.get('start_date', '').strip()
         end_date = request.form.get('end_date', '').strip()
         duration = request.form.get('duration', '').strip()
-
         student_year = request.form.get('student_year', '').strip()
         branch = request.form.get('branch', '').strip()
         other_branch = request.form.get('other_branch', '').strip()
-        submission_date = request.form.get('submission_date', '').strip()
-        if not submission_date:
-            submission_date = datetime.utcnow().strftime('%Y-%m-%d')
+        submission_date = request.form.get('submission_date') or datetime.utcnow().strftime('%Y-%m-%d')
 
-        # minimal validation
         if not (name and college and email and start_date and end_date and duration):
-            flash('All fields are required (including email and dates).', 'danger')
+            flash('All fields are required.', 'danger')
             return redirect(url_for('index'))
 
-        # file
         file = request.files.get('permission_letter')
-        if not file or file.filename == '':
-            flash('Permission letter (PDF) is required.', 'danger')
-            return redirect(url_for('index'))
-        if not allowed_file(file.filename):
-            flash('Only PDF files are allowed for permission letter.', 'danger')
+        if not file or not allowed_file(file.filename):
+            flash('Valid PDF permission letter required.', 'danger')
             return redirect(url_for('index'))
 
-        # save file locally under UPLOAD_FOLDER/permission_letters/
-        filename = secure_filename(file.filename)
+        fname = secure_filename(file.filename)
         ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
-        saved_filename = f"{ts}_{filename}"
-        upload_base = UPLOAD_FOLDER
-        subdir = os.path.join(upload_base, 'permission_letters')
-        os.makedirs(subdir, exist_ok=True)
-        save_path = os.path.join(subdir, saved_filename)
+        saved = f"{ts}_{fname}"
+        save_path = Path(UPLOAD_FOLDER) / "permission_letters" / saved
         file.save(save_path)
 
-        # stored paths (two forms for compatibility)
-        permission_pdf_path = os.path.join(upload_base, 'permission_letters', saved_filename)
-        permission_path = os.path.join('permission_letters', saved_filename)
-
-        # final branch
-        if branch == "Other" and other_branch:
-            branch_final = f"Other ({other_branch})"
-        else:
-            branch_final = branch or other_branch or ""
-
-        # create Firestore doc
         doc_ref = db.collection(COLLECTION).document()
-        doc_id = doc_ref.id
-        payload = {
-            "doc_id": doc_id,
+        doc_ref.set({
+            "doc_id": doc_ref.id,
             "student_name": name,
             "college_name": college,
             "email": email,
@@ -183,41 +145,34 @@ def submit():
             "end_date": end_date,
             "duration": duration,
             "student_year": student_year,
-            "branch": branch_final,
-            "other_branch": other_branch,
-            "permission_pdf": permission_pdf_path,
-            "permission_path": permission_path,
+            "branch": branch or other_branch,
+            "permission_path": f"permission_letters/{saved}",
             "status": "pending",
             "submission_date": submission_date,
             "created_at": datetime.utcnow().isoformat()
-        }
-        doc_ref.set(payload)
-        logger.info("Saved application %s for %s", doc_id, name)
-        flash('Application submitted. Wait for admin approval.', 'success')
+        })
+
+        flash('Application submitted successfully.', 'success')
         return redirect(url_for('index'))
 
     except Exception as e:
-        logger.exception("Error submitting application")
-        flash(f'Error submitting application: {str(e)}', 'danger')
+        logger.exception("Submit error")
+        flash(str(e), 'danger')
         return redirect(url_for('index'))
 
-# -----------------------
-# Admin auth
-# -----------------------
+# --------------------------------------------------
+# ADMIN AUTH
+# --------------------------------------------------
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    if request.method == 'GET':
-        return render_template('login.html')
-    username = request.form.get('username', '')
-    password = request.form.get('password', '')
-    if username == app.config.get('ADMIN_USERNAME') and password == app.config.get('ADMIN_PASSWORD'):
-        session['admin_logged_in'] = True
-        session['admin_user'] = username
-        flash('Logged in successfully.', 'login')  # login-specific category
-        return redirect(url_for('admin_dashboard'))
-    else:
+    if request.method == 'POST':
+        if (request.form.get('username') == app.config.get('ADMIN_USERNAME') and
+            request.form.get('password') == app.config.get('ADMIN_PASSWORD')):
+            session['admin_logged_in'] = True
+            flash('Logged in successfully.', 'login')
+            return redirect(url_for('admin_dashboard'))
         flash('Invalid credentials.', 'danger')
-        return redirect(url_for('admin_login'))
+    return render_template('login.html')
 
 @app.route('/admin/logout')
 def admin_logout():
@@ -225,148 +180,29 @@ def admin_logout():
     flash('Logged out.', 'info')
     return redirect(url_for('admin_login'))
 
-# -----------------------
-# Admin dashboard & view
-# -----------------------
-@app.route('/admin', methods=['GET'])
+# --------------------------------------------------
+# ADMIN DASHBOARD & VIEW
+# --------------------------------------------------
+@app.route('/admin')
 @admin_required
 def admin_dashboard():
-    try:
-        docs = db.collection(COLLECTION).order_by('created_at', direction=firestore.Query.DESCENDING).stream()
-        rows = []
-        for d in docs:
-            data = d.to_dict() or {}
-            rows.append({
-                'doc_ref_id': d.id,
-                'doc_id': data.get('doc_id', d.id),
-                'student_name': data.get('student_name', ''),
-                'college_name': data.get('college_name', ''),
-                'email': data.get('email', ''),
-                'start_date': data.get('start_date', ''),
-                'end_date': data.get('end_date', ''),
-                'duration': data.get('duration', ''),
-                'student_year': data.get('student_year', ''),
-                'branch': data.get('branch', ''),
-                'permission_pdf': data.get('permission_pdf', ''),
-                'permission_path': data.get('permission_path', ''),
-                'status': data.get('status', 'pending'),
-                'submission_date': data.get('submission_date', ''),
-                'created_at': data.get('created_at', '')
-            })
-        objs = [to_obj(r) for r in rows]
-        return render_template('admin.html', requests=objs)
-    except Exception as e:
-        logger.exception("Error loading admin dashboard")
-        flash(f"Error loading requests: {str(e)}", "danger")
-        return render_template('admin.html', requests=[])
+    docs = db.collection(COLLECTION).order_by(
+        'created_at', direction=firestore.Query.DESCENDING
+    ).stream()
+    rows = [to_obj(d.to_dict() | {"doc_ref_id": d.id}) for d in docs]
+    return render_template('admin.html', requests=rows)
 
-@app.route('/admin/view/<string:req_id>', methods=['GET'])
+@app.route('/admin/view/<req_id>')
 @admin_required
 def admin_view(req_id):
-    try:
-        # Fetch doc by reference id, fallback to doc_id field
-        doc_ref = db.collection(COLLECTION).document(req_id)
-        doc = doc_ref.get()
-        if not doc.exists:
-            query = db.collection(COLLECTION).where('doc_id', '==', req_id).limit(1).stream()
-            found = None
-            for d in query:
-                found = d
-                break
-            if not found:
-                flash('Request not found.', 'danger')
-                return redirect(url_for('admin_dashboard'))
-            doc_ref = db.collection(COLLECTION).document(found.id)
-            doc = doc_ref.get()
-
-        data = doc.to_dict() or {}
-
-        # Normalize permission path for URLs (convert backslashes to forward slashes)
-        perm = data.get("permission_path") or data.get("permission_pdf") or ""
-        if perm:
-            perm = perm.replace("\\", "/").lstrip("uploads/").lstrip("/")
-
-        generated = data.get("generated_letter_filename") or None
-
-        # Prepare variables expected by the template
-        return render_template(
-            "view_request.html",
-            req_id = req_id,
-            student_name = data.get("student_name"),
-            email = data.get("email"),
-            college = data.get("college_name"),
-            year = data.get("student_year"),
-            branch = data.get("branch"),
-            start_date = data.get("start_date"),
-            end_date = data.get("end_date"),
-            duration = data.get("duration"),
-            submission = data.get("submission_date"),
-            status = data.get("status"),
-            permission_filename = perm or None,
-            pdf_url = data.get("pdf_url"),
-            generated_filename = generated,
-            audit_log = data.get("audit_log", [])
-        )
-
-    except Exception as e:
-        logger.exception("Error loading request")
-        flash('Error loading request. Check server logs.', 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-# -----------------------
-# Serve uploaded files (robust)
-# -----------------------
-@app.route('/uploads/<path:filename>')
-@admin_required
-def uploaded_file(filename):
-    try:
-        upload_base = Path(UPLOAD_FOLDER).resolve()
-
-        if filename.startswith("uploads/"):
-            filename = filename[len("uploads/"):]
-        if filename.startswith("/"):
-            filename = filename.lstrip("/")
-
-        candidates = [
-            upload_base / filename,
-            upload_base / Path(filename).name,
-            upload_base / "permission_letters" / Path(filename).name
-        ]
-
-        for cand in candidates:
-            try:
-                cand_resolved = cand.resolve()
-            except Exception:
-                continue
-            if str(cand_resolved).startswith(str(upload_base)) and cand_resolved.is_file():
-                return send_file(str(cand_resolved), as_attachment=False)
-
-        logger.warning("Uploaded file not found. Tried: %s", [str(c) for c in candidates])
+    doc = db.collection(COLLECTION).document(req_id).get()
+    if not doc.exists:
         abort(404)
-    except Exception as e:
-        logger.exception("Error serving uploaded file %s", filename)
-        flash('Unable to open requested file.', 'danger')
-        return redirect(url_for('admin_dashboard'))
+    return render_template('view_request.html', **doc.to_dict(), req_id=req_id)
 
-# -----------------------
-# Debug: list all files under uploads (admin-only). Remove when happy.
-# -----------------------
-@app.route('/debug/list_uploads')
-@admin_required
-def debug_list_uploads():
-    base = Path(UPLOAD_FOLDER).resolve()
-    files = []
-    for p in base.rglob('*'):
-        if p.is_file():
-            rel = p.relative_to(base)
-            files.append(str(rel))
-    return render_template('debug_list.html', files=files)
-
-# -----------------------
-# Approve / Reject routes
-# -----------------------
-@app.route('/admin/approve/<string:req_id>', methods=['POST'])
-@admin_required
+# --------------------------------------------------
+# APPROVE (WeasyPrint)
+# --------------------------------------------------
 @app.route('/admin/approve/<req_id>', methods=['POST'])
 @admin_required
 def admin_approve(req_id):
@@ -393,12 +229,7 @@ def admin_approve(req_id):
     pdf_name = f"offer_{req_id}.pdf"
     pdf_path = Path(GENERATED_FOLDER) / pdf_name
 
-    try:
-        WeasyHTML(string=html, base_url=request.host_url).write_pdf(pdf_path)
-    except Exception as e:
-        logger.exception("WeasyPrint failed")
-        flash("PDF generation failed", "danger")
-        return redirect(url_for('admin_view', req_id=req_id))
+    WeasyHTML(string=html, base_url=request.host_url).write_pdf(pdf_path)
 
     doc_ref.update({
         "status": "approved",
@@ -406,120 +237,52 @@ def admin_approve(req_id):
         "issued_date": issued
     })
 
-    flash("Approved & letter generated", "success")
+    flash("Request approved and letter generated.", "success")
     return redirect(url_for('admin_view', req_id=req_id))
 
-
-@app.route('/admin/reject/<string:req_id>', methods=['POST'])
+# --------------------------------------------------
+# REJECT
+# --------------------------------------------------
+@app.route('/admin/reject/<req_id>', methods=['POST'])
 @admin_required
 def admin_reject(req_id):
-    try:
-        doc_ref = db.collection(COLLECTION).document(req_id)
-        doc = doc_ref.get()
-        if not doc.exists:
-            query = db.collection(COLLECTION).where('doc_id', '==', req_id).limit(1).stream()
-            found = None
-            for d in query:
-                found = d
-                break
-            if not found:
-                flash('Request not found.', 'danger')
-                return redirect(url_for('admin_dashboard'))
-            doc_ref = db.collection(COLLECTION).document(found.id)
-            doc = doc_ref.get()
+    db.collection(COLLECTION).document(req_id).update({
+        "status": "rejected",
+        "generated_letter_filename": None
+    })
+    flash("Request rejected.", "info")
+    return redirect(url_for('admin_view', req_id=req_id))
 
-        data = doc.to_dict() or {}
-        # If there is a generated file, remove it
-        gen_filename = data.get('generated_letter_filename')
-        if gen_filename:
-            gen_folder = Path(app.config.get('GENERATED_FOLDER', 'generated_letters')).resolve()
-            gen_path = gen_folder / gen_filename
-            try:
-                if gen_path.exists():
-                    gen_path.unlink()
-                    logger.info("Deleted generated file %s", str(gen_path))
-            except Exception as e:
-                logger.warning("Failed to delete generated file %s: %s", str(gen_path), e)
+# --------------------------------------------------
+# FILE SERVING
+# --------------------------------------------------
+@app.route('/uploads/<path:filename>')
+@admin_required
+def uploaded_file(filename):
+    path = Path(UPLOAD_FOLDER) / filename
+    if not path.is_file():
+        abort(404)
+    return send_file(path)
 
-        # Update Firestore status and clear generated references
-        doc_ref.update({
-            'status': 'rejected',
-            'generated_letter_filename': None,
-            'generated_letter_path': None,
-            'approved_at': None,
-            'issued_date': None
-        })
-        flash('Request rejected. Generated letter (if any) removed.', 'info')
-        return redirect(url_for('admin_view', req_id=doc_ref.id))
-    except Exception as e:
-        logger.exception("Error rejecting request")
-        flash(f"Error rejecting request: {str(e)}", 'danger')
-        return redirect(url_for('admin_dashboard'))
-
-# -----------------------
-# Serve generated letters
-# -----------------------
-@app.route('/generated_letters/<path:filename>')
+@app.route('/generated_letters/<filename>')
 @admin_required
 def serve_generated(filename):
-    gen_folder = Path(GENERATED_FOLDER).resolve()
-    # Security - ensure filename is safe and inside generated folder
-    safe = secure_filename(filename)
-    file_path = gen_folder / safe
-    try:
-        file_res = file_path.resolve()
-    except Exception:
+    path = Path(GENERATED_FOLDER) / secure_filename(filename)
+    if not path.is_file():
         abort(404)
-    if not str(file_res).startswith(str(gen_folder)) or not file_res.is_file():
-        abort(404)
-    return send_file(str(file_res), as_attachment=False)
+    return send_file(path)
 
-# ---- Download letter route (admin protected) ----
 @app.route('/download_letter/<req_id>')
 @admin_required
 def download_letter(req_id):
-    gen_folder = Path(GENERATED_FOLDER).resolve()
+    path = Path(GENERATED_FOLDER) / f"offer_{req_id}.pdf"
+    if not path.is_file():
+        abort(404)
+    return send_file(path, as_attachment=True)
 
-    candidates = [
-        gen_folder / f"internship_{req_id}.pdf",
-        gen_folder / f"{req_id}.pdf",
-        gen_folder / f"offer_{req_id}.pdf",
-        gen_folder / f"letter_{req_id}.pdf",
-        gen_folder / f"offer_{req_id}.pdf"
-    ]
-
-    for p in candidates:
-        try:
-            p_res = p.resolve()
-        except Exception:
-            continue
-        if str(p_res).startswith(str(gen_folder)) and p_res.is_file():
-            return send_file(str(p_res), as_attachment=True, download_name=p_res.name)
-
-    # fallback: check Firestore doc for 'pdf_url' or generated_letter_filename
-    try:
-        doc = db.collection(COLLECTION).document(req_id).get()
-        if doc.exists:
-            pdf_url = doc.get('pdf_url')
-            gen_name = doc.get('generated_letter_filename')
-            if gen_name:
-                local = gen_folder / gen_name
-                if local.is_file():
-                    return send_file(str(local.resolve()), as_attachment=True, download_name=local.name)
-            if pdf_url:
-                return redirect(pdf_url)
-    except Exception:
-        logger.exception("Error checking Firestore for pdf_url fallback")
-
-    abort(404)
-
-# Error handler
-@app.errorhandler(413)
-def request_entity_too_large(error):
-    flash('Uploaded file is too large.', 'danger')
-    return redirect(url_for('index'))
-
+# --------------------------------------------------
+# MAIN
+# --------------------------------------------------
 if __name__ == '__main__':
     logger.info("Starting Flask + Firestore JNPA app")
-    # When debugging locally keep debug=True, in production set to False
     app.run(debug=True)
