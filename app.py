@@ -292,3 +292,80 @@ def health():
 # --------------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+# --------------------------------------------------
+# SUBMIT INTERNSHIP FORM  ✅ REQUIRED
+# --------------------------------------------------
+@app.route('/submit', methods=['POST'])
+def submit():
+    try:
+        name = request.form.get('full_name', '').strip()
+        college = request.form.get('college_name', '').strip()
+        email = request.form.get('email', '').strip()
+        start_date = request.form.get('start_date', '').strip()
+        end_date = request.form.get('end_date', '').strip()
+        duration = request.form.get('duration', '').strip()
+        student_year = request.form.get('student_year', '').strip()
+        branch = request.form.get('branch', '').strip()
+        other_branch = request.form.get('other_branch', '').strip()
+
+        submission_date = request.form.get('submission_date')
+        if not submission_date:
+            submission_date = datetime.utcnow().strftime('%Y-%m-%d')
+
+        # basic validation
+        if not (name and college and email and start_date and end_date and duration):
+            flash("All fields are required.", "danger")
+            return redirect(url_for('index'))
+
+        # file upload
+        file = request.files.get('permission_letter')
+        if not file or file.filename == '':
+            flash("Permission letter PDF is required.", "danger")
+            return redirect(url_for('index'))
+
+        if not file.filename.lower().endswith('.pdf'):
+            flash("Only PDF files are allowed.", "danger")
+            return redirect(url_for('index'))
+
+        # save file
+        filename = secure_filename(file.filename)
+        ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+        saved_filename = f"{ts}_{filename}"
+
+        save_path = Path(UPLOAD_FOLDER) / "permission_letters" / saved_filename
+        file.save(save_path)
+
+        # final branch
+        if branch == "Other" and other_branch:
+            branch_final = f"Other ({other_branch})"
+        else:
+            branch_final = branch or other_branch or ""
+
+        # save to Firestore
+        doc_ref = db.collection(COLLECTION).document()
+        doc_ref.set({
+            "doc_id": doc_ref.id,
+            "student_name": name,
+            "college_name": college,
+            "email": email,
+            "start_date": start_date,
+            "end_date": end_date,
+            "duration": duration,
+            "student_year": student_year,
+            "branch": branch_final,
+            "permission_path": f"permission_letters/{saved_filename}",
+            "status": "pending",
+            "submission_date": submission_date,
+            "created_at": datetime.utcnow().isoformat()
+        })
+
+        flash("Application submitted successfully.", "success")
+        return redirect(url_for('index'))
+
+    except Exception as e:
+        logger.exception("Submit error")
+        flash(f"Error submitting application: {str(e)}", "danger")
+        return redirect(url_for('index'))
+
