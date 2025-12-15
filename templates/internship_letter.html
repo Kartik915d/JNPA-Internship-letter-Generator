@@ -5,13 +5,13 @@
   <title>Internship Letter</title>
 
   <style>
-    /* ---------- PAGE SETUP ---------- */
-    @page { size: A4; margin: 22mm 18mm 28mm 18mm; }
+    /* -------- PAGE SETUP -------- */
+    @page { size: A4; margin: 20mm 18mm 26mm 18mm; }
 
-    /* ---------- FONT FIX (CRITICAL) ---------- */
+    /* -------- HINDI FONT (MANGAL) -------- */
     @font-face {
-      font-family: 'Deva';
-      src: url('{{ url_for("static", filename="fonts/NotoSansDevanagari-Regular.ttf") }}')
+      font-family: 'Mangal';
+      src: url('{{ url_for("static", filename="fonts/MANGAL.TTF") }}')
            format('truetype');
     }
 
@@ -23,24 +23,24 @@
     }
 
     .hindi {
-      font-family: 'Deva', serif;
+      font-family: 'Mangal', serif;
     }
 
-    /* ---------- HEADER ---------- */
+    /* -------- HEADER -------- */
     .jnpa-letterhead {
-      margin-bottom: 6mm;
       position: relative;
+      margin-bottom: 6mm;
     }
 
     .lh-row {
       display: grid;
-      grid-template-columns: 100px 1fr 100px;
+      grid-template-columns: 90px 1fr 90px;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .lh-logo img {
-      max-height: 70px;
+      max-height: 64px;
     }
 
     .lh-title-wrap {
@@ -48,112 +48,114 @@
     }
 
     .lh-title-hindi {
-      font-size: 26px;
-      font-weight: 800;
+      font-size: 22px;
+      font-weight: bold;
       color: #0b63a8;
       margin: 0;
     }
 
     .lh-title {
-      font-size: 30px;
-      font-weight: 800;
+      font-size: 26px;
+      font-weight: bold;
       color: #0b63a8;
       margin: 0;
     }
 
     .lh-contact {
-      font-size: 9.5pt;
-      line-height: 1.2;
-      margin-top: 4px;
+      font-size: 9pt;
+      line-height: 1.15;
+      margin-top: 3px;
     }
 
     .iso-box {
       position: absolute;
       right: 0;
       top: 0;
-      font-size: 8.5pt;
+      font-size: 8pt;
       text-align: right;
     }
 
     .lh-divider {
-      margin-top: 6px;
+      margin-top: 5px;
       border-top: 2px solid #000;
     }
 
-    /* ---------- CONTENT ---------- */
+    /* -------- CONTENT -------- */
     .meta {
       display: flex;
       justify-content: space-between;
-      font-size: 13pt;
-      margin-bottom: 14px;
+      font-size: 12pt;
+      margin-bottom: 10px;
     }
 
     .recipient {
-      font-size: 14pt;
-      margin-bottom: 16px;
+      font-size: 13pt;
+      margin-bottom: 12px;
     }
 
     .subject {
       text-align: center;
-      font-size: 16pt;
+      font-size: 15pt;
       font-weight: bold;
-      margin: 14px 0;
+      margin: 10px 0 12px 0;
     }
 
     .salutation {
-      font-size: 14pt;
-      margin-bottom: 10px;
+      font-size: 13pt;
+      margin-bottom: 8px;
     }
 
     .body {
-      font-size: 14pt;
-      line-height: 1.45;
+      font-size: 13pt;
+      line-height: 1.35;
       text-align: justify;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
-    /* ---------- CONDITIONS (FIXED) ---------- */
+    /* -------- CONDITIONS (COMPACT) -------- */
     ol.conditions {
-      font-size: 14pt;
-      line-height: 1.45;
-      margin-left: 22px;
-      padding-left: 8px;
+      font-size: 12.8pt;
+      line-height: 1.32;
+      margin-left: 20px;
+      padding-left: 6px;
+      margin-bottom: 10px;
     }
 
     ol.conditions li {
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       page-break-inside: avoid;
     }
 
-    /* ---------- SIGNATURE ---------- */
+    /* -------- SIGNATURE -------- */
     .signature-table {
       width: 100%;
-      margin-top: 26px;
-      font-size: 14pt;
+      margin-top: 18px;
+      font-size: 13pt;
     }
 
     .sig-left { text-align: left; }
     .sig-right { text-align: right; }
 
     .sig-author {
-      padding-top: 40px;
+      padding-top: 32px;
       text-align: right;
       font-weight: bold;
     }
 
-    /* ---------- FOOTER ---------- */
+    /* -------- FOOTER (BOTTOM SAFE) -------- */
     .footer {
       border-top: 1px solid #000;
-      margin-top: 18px;
-      padding-top: 6px;
-      font-size: 10pt;
+      margin-top: 14px;
+      padding-top: 5px;
+      font-size: 9.5pt;
       text-align: center;
+      line-height: 1.15;
     }
 
     .footer .small {
       display: block;
-      margin-top: 4px;
-      font-size: 10pt;
+      margin-top: 3px;
+      font-size: 9.5pt;
     }
   </style>
 </head>
@@ -162,7 +164,6 @@
 
 <!-- HEADER -->
 <div class="jnpa-letterhead">
-
   <div class="iso-box">
     ISO 9001 : 2015<br>
     ISO 14001 : 2015<br>
@@ -179,8 +180,10 @@
       <div class="lh-title-hindi hindi">जवाहरलाल नेहरू बंदरगाह प्राधिकरण</div>
       <div class="lh-title">JAWAHARLAL NEHRU PORT AUTHORITY</div>
       <div class="lh-contact hindi">
-        पत्लम कार्यालय प्रशासन भवन, शेवा, नवी मुंबई – 400707
-      </div>
+        पत्लम कार्यालय प्रशासन भवन, शेवा, नवी मुंबई 400707. Port Office Administration Bldg., Sheva, Navi Mumbai – 400707
+        मुख्यता अधिकारी Chiel Vigilance Off (022) 2724 4151 मुख्य महाप्रबंधक (प्रशासन) Chief General Manager (Admn.) & Secy-(022) 2724 4021, मुख्य महाप्रबंधक्ष (यातायात) Chief General Manager (Traffic) (022) 27244191, मुख्य मा.Chef General Manager (M&EE)-(022) 2724 4181 मुख्य महाप्रबंधक (वित्त) Chiet General Manager (Fin)-(022) 27244081 मुख्य महाप्रबंधक (प.मी.चि.) Chief General Manager (PPSD)-(022) 2724 4156
+
+        उप-संरक्षक Dy Conservator (022) 27244171, हार्बर मास्टर (022) 2724-4173 Website: www.jnport.gov.in E-mail: info@jinport.gov.in</div>
     </div>
 
     <div></div>
@@ -189,7 +192,7 @@
   <div class="lh-divider"></div>
 </div>
 
-<!-- CONTENT -->
+<!-- BODY -->
 <div class="meta">
   <div>Ref: JN/TC/A/{{ letter_year }}</div>
   <div>Date: {{ issued_date }}</div>
@@ -215,15 +218,16 @@
 </div>
 
 <ol class="conditions">
-    <li>The student will be treated as an unpaid internee. No lodging, boarding or transport facilities will be provided to the internee.</li>
-    <li>An undertaking will be obtained from the internee for maintaining discipline during the training period.</li>
-    <li>JNPA will not bear any liability during the internship period due to any accident or personal injury.</li>
-    <li>JNPA will not be liable for any payment or extending any facilities to the internee.</li>
-    <li>The project work completed by the above internee shall be used only for academic purposes and should not be made public. A copy of the project work must be submitted to JNPA before issuing the certificate.</li>
-    <li>If the internee needs to visit Port operational areas, he/she must arrange PPE (Helmet, Safety Shoes, etc.).</li>
-    <li>Internship in the Port area will be allowed as per availability of faculty.</li>
-    <li>Operational area visits must be accompanied by a JNPA official.</li>
-    <li>The concerned student should report to the undersigned for further instructions.</li>
+  <li>The student will be treated as an unpaid internee. No lodging, boarding or transport facilities will be provided to the internee.</li>
+  <li>An undertaking will be obtained from the internee for maintaining discipline during the training period.</li>
+  <li>JNPA will not bear any liability during the internship period due to any accident or personal injury.</li>
+  <li>JNPA will not be liable for any payment or extending any facilities to the internee.</li>
+  <li>The project work completed by the above internee shall be used only for academic purposes and should not be made public.
+      A copy of the project work must be submitted to JNPA before issuing the certificate.</li>
+  <li>If the internee needs to visit Port operational areas, he/she must arrange PPE (Helmet, Safety Shoes, etc.).</li>
+  <li>Internship in the Port area will be allowed as per availability of faculty.</li>
+  <li>Operational area visits must be accompanied by a JNPA official.</li>
+  <li>The concerned student should report to the undersigned for further instructions.</li>
 </ol>
 
 <table class="signature-table">
@@ -237,11 +241,12 @@
   </tr>
 </table>
 
+<!-- FOOTER -->
 <div class="footer hindi">
-  मुंबई कार्यालय : 1502, एक्सप्रेस टावर्स, नरिमन प्वाइंट, मुंबई - 400021.
-  <span class="small">
-    हमेशा हिन्दी में पत्राचार करके देश का गौरव बढ़ाएँ।
-  </span>
+      मुंबई कार्यालय : 1502, एक्सप्रेस टावर्स, एयर इंडिया बिल्डिंग के पास, रामनाथ गोयंका मार्ग, नरिमन प्वाइंट, मुंबई - 400021.
+  <span class="small"> MUMBAI OFFICE : 1502, EXPRESS TOWERS, NEAR AIR INDIA BUILDING, RAMNATH GOENKA MARG, NARIMAN POINT, MUMBAI - 400021. TEL: (22) 6616 5600 · FAX: (22) 6743 1116  </span>
+  <br>हमेशा हिन्दी में पत्राधार करके देश का गौरव बढ़ाएँ।
+
 </div>
 
 </body>
