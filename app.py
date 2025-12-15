@@ -198,7 +198,37 @@ def admin_view(req_id):
     doc = db.collection(COLLECTION).document(req_id).get()
     if not doc.exists:
         abort(404)
-    return render_template('view_request.html', **doc.to_dict(), req_id=req_id)
+
+    data = doc.to_dict()
+
+    # ✅ Normalize status (CRITICAL FIX)
+    status = (data.get("status") or "pending").lower()
+
+    # ✅ Map fields expected by view_request.html
+    context = {
+        "req_id": req_id,
+        "student_name": data.get("student_name"),
+        "email": data.get("email"),
+        "college": data.get("college_name"),
+        "year": data.get("student_year"),
+        "branch": data.get("branch"),
+        "start_date": data.get("start_date"),
+        "end_date": data.get("end_date"),
+        "duration": data.get("duration"),
+        "submission": data.get("submission_date"),
+        "status": status,
+
+        # permission file
+        "permission_filename": (
+            data.get("permission_path").split("/", 1)[1]
+            if data.get("permission_path") else None
+        ),
+
+        # generated letter
+        "generated_filename": data.get("generated_letter_filename"),
+    }
+
+    return render_template("view_request.html", **context)
 
 # --------------------------------------------------
 # APPROVE (WeasyPrint)
