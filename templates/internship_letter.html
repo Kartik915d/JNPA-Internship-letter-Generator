@@ -7,9 +7,15 @@
   <style>
     /* Page setup: leave extra bottom margin for footer space */
     @page { size: A4; margin: 22mm 18mm 30mm 18mm; }
+    @font-face {
+     font-family: 'Deva';
+     src: url("{{ url_for('static', filename='fonts/NotoSansDevanagari-Regular.ttf') }}") format('truetype');
+     font-weight: normal;
+     font-style: normal;
+    }
 
     html, body {
-      font-family: "Times New Roman", Times, serif;
+      font-family: 'Deva',"Times New Roman", Times, serif;
       color: #000;
       margin: 0;
       padding: 0;
