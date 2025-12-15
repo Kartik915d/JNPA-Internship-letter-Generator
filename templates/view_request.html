@@ -306,7 +306,7 @@
 
               {% if generated_filename %}
                 <a class="btn btn-outline-secondary"
-                   href="{{ url_for('preview_letter', req_id=req_id) }}"
+                   href="/admin/open-letter/{{ req_id }}"
                    target="_blank">Open Letter</a>
               {% endif %}
             </div>
