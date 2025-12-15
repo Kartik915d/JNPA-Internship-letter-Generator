@@ -1,5 +1,6 @@
 # app.py
 import os
+import json
 import logging
 import base64
 from datetime import datetime
@@ -52,14 +53,26 @@ os.makedirs(GENERATED_FOLDER, exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_FOLDER, 'permission_letters'), exist_ok=True)
 
 # Firestore init
-FIRE_CRED_PATH = os.getenv("FIREBASE_CREDENTIALS", None)
-if not FIRE_CRED_PATH or not os.path.isfile(FIRE_CRED_PATH):
-    raise RuntimeError("Please set FIREBASE_CREDENTIALS env var and point to the serviceAccount JSON file.")
+firebase_cred = os.environ.get("FIREBASE_CREDENTIALS")
 
-cred = credentials.Certificate(FIRE_CRED_PATH)
+if not firebase_cred:
+    raise RuntimeError("FIREBASE_CREDENTIALS env var not set")
+
+try:
+    # Render / cloud
+    cred_dict = json.loads(firebase_cred)
+    cred = credentials.Certificate(cred_dict)
+except json.JSONDecodeError:
+    # Local machine
+    if not os.path.isfile(firebase_cred):
+        raise RuntimeError("Invalid FIREBASE_CREDENTIALS value")
+    cred = credentials.Certificate(firebase_cred)
+
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
+
 db = firestore.client()
+
 
 # constants
 ALLOWED_EXT = {'pdf'}
