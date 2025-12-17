@@ -227,6 +227,8 @@ def admin_approve(req_id):
     header_img = image_to_data_uri(
         Path(app.static_folder) / "img/Fjnpa_logo.png"
     )
+    
+    data.pop("issued_date", None)
 
     html = render_template(
         "internship_letter.html",
