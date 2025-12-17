@@ -313,7 +313,7 @@
 
           {% elif st == 'pending' %}
             <p class="small-note mb-3">No letter is available yet. Approve the request to generate the internship letter.</p>
-            <form method="post" action="{{ url_for('admin_approve_generate', req_id=req_id) }}" class="d-inline">
+            <form method="post" action="{{ url_for('admin_approve', req_id=req_id) }}" class="d-inline">
               <button type="submit" class="btn btn-success btn-sm">Approve & Generate</button>
             </form>
 
@@ -335,7 +335,7 @@
         <div class="card-body">
           <h6 class="card-title">Admin Actions</h6>
 
-          <form method="post" action="{{ url_for('admin_approve_generate', req_id=req_id) }}" class="mb-2">
+          <form method="post" action="{{ url_for('admin_approve', req_id=req_id) }}" class="mb-2">
             <button type="submit" class="btn btn-success w-100">Approve</button>
           </form>
 
