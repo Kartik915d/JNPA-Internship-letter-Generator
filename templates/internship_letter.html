@@ -6,12 +6,14 @@
 
   <style>
     /* -------- PAGE SETUP -------- */
-    @page { size: A4; margin: 12mm 15mm 12mm 15mm; }
+    @page { size: A4; margin: 20mm 18mm 26mm 18mm; }
 
     
     /* -------- HINDI FONT (MANGAL) -------- */
     @font-face {
       font-family: 'Mangal';
+      /* RAILWAY FIX: Use direct filesystem path. 
+         Ensure the file is strictly named "MANGAL.TTF" (Case Sensitive on Linux!) */
       src: url('file:///app/static/fonts/MANGAL.TTF') format('truetype');
       font-weight: normal;
       font-style: normal;
@@ -31,18 +33,18 @@
     /* -------- HEADER -------- */
     .jnpa-letterhead {
       position: relative;
-      margin-bottom: 4mm;
+      margin-bottom: 6mm;
     }
 
     .lh-row {
       display: grid;
-      grid-template-columns: 80px 1fr 80px;
+      grid-template-columns: 90px 1fr 90px;
       align-items: center;
-      gap: 5px;
+      gap: 8px;
     }
 
     .lh-logo img {
-      max-height: 55px;
+      max-height: 64px;
     }
 
     .lh-title-wrap {
@@ -50,21 +52,21 @@
     }
 
     .lh-title-hindi {
-      font-size: 18px;
+      font-size: 22px;
       font-weight: bold;
       color: #0b63a8;
       margin: 0;
     }
 
     .lh-title {
-      font-size: 20px;
+      font-size: 26px;
       font-weight: bold;
       color: #0b63a8;
       margin: 0;
     }
 
     .lh-contact {
-      font-size: 6.5pt;
+      font-size: 7pt;
       line-height: 1.15;
       margin-top: 3px;
     }
@@ -73,38 +75,38 @@
       position: absolute;
       right: 0;
       top: 0;
-      font-size: 7pt;
+      font-size: 8pt;
       text-align: right;
     }
 
     .lh-divider {
-      margin-top: 4px;
-      border-top: 1.5px solid #000;
+      margin-top: 5px;
+      border-top: 2px solid #000;
     }
 
     /* -------- CONTENT -------- */
     .meta {
       display: flex;
       justify-content: space-between;
-      font-size: 11pt;
-      margin-bottom: 8px;
+      font-size: 12pt;
+      margin-bottom: 10px;
     }
 
     .recipient {
-      font-size: 11.5pt;
-      margin-bottom: 8px;
+      font-size: 13pt;
+      margin-bottom: 12px;
     }
 
     .subject {
       text-align: center;
-      font-size: 13pt;
+      font-size: 15pt;
       font-weight: bold;
-      margin: 8px 0 10px 0;
+      margin: 10px 0 12px 0;
     }
 
     .salutation {
-      font-size: 11.5pt;
-      margin-bottom: 6px;
+      font-size: 13pt;
+      margin-bottom: 8px;
     }
 
     .body {
@@ -116,30 +118,30 @@
 
     /* -------- CONDITIONS (COMPACT) -------- */
     ol.conditions {
-      font-size: 11pt;
-      line-height: 1.2;
-      margin-left: 18px;
-      padding-left: 5px;
-      margin-bottom: 8px;
+      font-size: 12.8pt;
+      line-height: 1.32;
+      margin-left: 20px;
+      padding-left: 6px;
+      margin-bottom: 10px;
     }
 
     ol.conditions li {
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       page-break-inside: avoid;
     }
 
     /* -------- SIGNATURE -------- */
     .signature-table {
       width: 100%;
-      margin-top: 15px;
-      font-size: 11.5pt;
+      margin-top: 18px;
+      font-size: 13pt;
     }
 
     .sig-left { text-align: left; }
     .sig-right { text-align: right; }
 
     .sig-author {
-      padding-top: 25px;
+      padding-top: 32px;
       text-align: right;
       font-weight: bold;
     }
@@ -147,17 +149,17 @@
     /* -------- FOOTER (BOTTOM SAFE) -------- */
     .footer {
       border-top: 1px solid #000;
-      margin-top: 10px;
-      padding-top: 4px;
-      font-size: 8.5pt;
+      margin-top: 14px;
+      padding-top: 5px;
+      font-size: 9.5pt;
       text-align: center;
-      line-height: 1.1;
+      line-height: 1.15;
     }
 
     .footer .small {
       display: block;
-      margin-top: 2px;
-      font-size: 8pt;
+      margin-top: 3px;
+      font-size: 9.5pt;
     }
   </style>
 </head>
