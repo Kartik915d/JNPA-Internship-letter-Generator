@@ -5,159 +5,204 @@
   <title>Internship Letter</title>
 
   <style>
-    /* -------- PAGE SETUP -------- */
-    @page { size: A4; margin: 20mm 18mm 26mm 18mm; }
+  /* =====================================================
+     PAGE SETUP
+     ===================================================== */
+  @page { size: A4; margin: 20mm 18mm 26mm 18mm; }
 
-    /* -------- HINDI FONT (MANGAL) -------- */
-    @font-face {
-      font-family: 'Mangal';
-      src: url('{{ url_for("static", filename="fonts/MANGAL.TTF") }}')
-           format('truetype');
-    }
+  /* =====================================================
+     HINDI FONT STACK (BULLETPROOF)
+     ===================================================== */
 
-    body {
-      font-family: "Times New Roman", Times, serif;
-      color: #000;
-      margin: 0;
-      padding: 0;
-    }
+  /* 1️⃣ Noto Sans Devanagari – Variable (Best) */
+  @font-face {
+    font-family: 'HindiPrimary';
+    src: url('{{ url_for("static", filename="fonts/NotoSansDevanagari-VariableFont_wdth,wght.ttf") }}')
+         format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+  }
 
-    .hindi {
-      font-family: 'Mangal', serif;
-    }
+  /* 2️⃣ Noto Sans Devanagari – Regular (Fallback) */
+  @font-face {
+    font-family: 'HindiFallback1';
+    src: url('{{ url_for("static", filename="fonts/NotoSansDevanagari-Regular.ttf") }}')
+         format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
 
-    /* -------- HEADER -------- */
-    .jnpa-letterhead {
-      position: relative;
-      margin-bottom: 6mm;
-    }
+  /* 3️⃣ Mangal – Last resort (Guaranteed Hindi) */
+  @font-face {
+    font-family: 'HindiFallback2';
+    src: url('{{ url_for("static", filename="fonts/MANGAL.TTF") }}')
+         format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
 
-    .lh-row {
-      display: grid;
-      grid-template-columns: 90px 1fr 90px;
-      align-items: center;
-      gap: 8px;
-    }
+  /* =====================================================
+     GLOBAL TYPOGRAPHY
+     ===================================================== */
+  body {
+    font-family: "Times New Roman", Times, serif;
+    color: #000;
+    margin: 0;
+    padding: 0;
+  }
 
-    .lh-logo img {
-      max-height: 64px;
-    }
+  /* Hindi utility class */
+  .hindi {
+    font-family:
+      'HindiPrimary',
+      'HindiFallback1',
+      'HindiFallback2',
+      serif;
+  }
 
-    .lh-title-wrap {
-      text-align: center;
-    }
+  /* =====================================================
+     HEADER
+     ===================================================== */
+  .jnpa-letterhead {
+    position: relative;
+    margin-bottom: 6mm;
+  }
 
-    .lh-title-hindi {
-      font-size: 22px;
-      font-weight: bold;
-      color: #0b63a8;
-      margin: 0;
-    }
+  .lh-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 90px;
+    align-items: center;
+    gap: 8px;
+  }
 
-    .lh-title {
-      font-size: 26px;
-      font-weight: bold;
-      color: #0b63a8;
-      margin: 0;
-    }
+  .lh-logo img {
+    max-height: 64px;
+  }
 
-    .lh-contact {
-      font-size: 7pt;
-      line-height: 1.15;
-      margin-top: 3px;
-    }
+  .lh-title-wrap {
+    text-align: center;
+  }
 
-    .iso-box {
-      position: absolute;
-      right: 0;
-      top: 0;
-      font-size: 8pt;
-      text-align: right;
-    }
+  .lh-title-hindi {
+    font-size: 22px;
+    font-weight: bold;
+    color: #0b63a8;
+    margin: 0;
+  }
 
-    .lh-divider {
-      margin-top: 5px;
-      border-top: 2px solid #000;
-    }
+  .lh-title {
+    font-size: 26px;
+    font-weight: bold;
+    color: #0b63a8;
+    margin: 0;
+  }
 
-    /* -------- CONTENT -------- */
-    .meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12pt;
-      margin-bottom: 10px;
-    }
+  .lh-contact {
+    font-size: 7pt;
+    line-height: 1.15;
+    margin-top: 3px;
+  }
 
-    .recipient {
-      font-size: 13pt;
-      margin-bottom: 12px;
-    }
+  .iso-box {
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 8pt;
+    text-align: right;
+  }
 
-    .subject {
-      text-align: center;
-      font-size: 15pt;
-      font-weight: bold;
-      margin: 10px 0 12px 0;
-    }
+  .lh-divider {
+    margin-top: 5px;
+    border-top: 2px solid #000;
+  }
 
-    .salutation {
-      font-size: 13pt;
-      margin-bottom: 8px;
-    }
+  /* =====================================================
+     CONTENT
+     ===================================================== */
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12pt;
+    margin-bottom: 10px;
+  }
 
-    .body {
-      font-size: 13pt;
-      line-height: 1.35;
-      text-align: justify;
-      margin-bottom: 10px;
-    }
+  .recipient {
+    font-size: 13pt;
+    margin-bottom: 12px;
+  }
 
-    /* -------- CONDITIONS (COMPACT) -------- */
-    ol.conditions {
-      font-size: 12.8pt;
-      line-height: 1.32;
-      margin-left: 20px;
-      padding-left: 6px;
-      margin-bottom: 10px;
-    }
+  .subject {
+    text-align: center;
+    font-size: 15pt;
+    font-weight: bold;
+    margin: 10px 0 12px 0;
+  }
 
-    ol.conditions li {
-      margin-bottom: 6px;
-      page-break-inside: avoid;
-    }
+  .salutation {
+    font-size: 13pt;
+    margin-bottom: 8px;
+  }
 
-    /* -------- SIGNATURE -------- */
-    .signature-table {
-      width: 100%;
-      margin-top: 18px;
-      font-size: 13pt;
-    }
+  .body {
+    font-size: 13pt;
+    line-height: 1.35;
+    text-align: justify;
+    margin-bottom: 10px;
+  }
 
-    .sig-left { text-align: left; }
-    .sig-right { text-align: right; }
+  /* =====================================================
+     CONDITIONS (COMPACT)
+     ===================================================== */
+  ol.conditions {
+    font-size: 12.8pt;
+    line-height: 1.32;
+    margin-left: 20px;
+    padding-left: 6px;
+    margin-bottom: 10px;
+  }
 
-    .sig-author {
-      padding-top: 32px;
-      text-align: right;
-      font-weight: bold;
-    }
+  ol.conditions li {
+    margin-bottom: 6px;
+    page-break-inside: avoid;
+  }
 
-    /* -------- FOOTER (BOTTOM SAFE) -------- */
-    .footer {
-      border-top: 1px solid #000;
-      margin-top: 14px;
-      padding-top: 5px;
-      font-size: 9.5pt;
-      text-align: center;
-      line-height: 1.15;
-    }
+  /* =====================================================
+     SIGNATURE
+     ===================================================== */
+  .signature-table {
+    width: 100%;
+    margin-top: 18px;
+    font-size: 13pt;
+  }
 
-    .footer .small {
-      display: block;
-      margin-top: 3px;
-      font-size: 9.5pt;
-    }
-  </style>
+  .sig-left { text-align: left; }
+  .sig-right { text-align: right; }
+
+  .sig-author {
+    padding-top: 32px;
+    text-align: right;
+    font-weight: bold;
+  }
+
+  /* =====================================================
+     FOOTER (BOTTOM SAFE)
+     ===================================================== */
+  .footer {
+    border-top: 1px solid #000;
+    margin-top: 14px;
+    padding-top: 5px;
+    font-size: 9.5pt;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .footer .small {
+    display: block;
+    margin-top: 3px;
+    font-size: 9.5pt;
+  }
+</style>
+
 </head>
 
 <body>
