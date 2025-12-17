@@ -8,11 +8,15 @@
     /* -------- PAGE SETUP -------- */
     @page { size: A4; margin: 20mm 18mm 26mm 18mm; }
 
+    
     /* -------- HINDI FONT (MANGAL) -------- */
     @font-face {
       font-family: 'Mangal';
-      src: url('{{ url_for("static", filename="fonts/MANGAL.TTF") }}')
-           format('truetype');
+      /* RAILWAY FIX: Use direct filesystem path. 
+         Ensure the file is strictly named "MANGAL.TTF" (Case Sensitive on Linux!) */
+      src: url('file:///app/static/fonts/MANGAL.TTF') format('truetype');
+      font-weight: normal;
+      font-style: normal;
     }
 
     body {
