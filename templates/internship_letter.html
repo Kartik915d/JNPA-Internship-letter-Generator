@@ -5,15 +5,16 @@
   <title>Internship Letter</title>
 
   <style>
-    /* -------- PAGE SETUP -------- */
-    @page { size: A4; margin: 20mm 18mm 26mm 18mm; }
+    /* -------- PAGE SETUP (TIGHTER MARGINS) -------- */
+    @page { 
+        size: A4; 
+        margin: 15mm 18mm 15mm 18mm; /* Reduced Top/Bottom margins */
+    }
 
-    
     /* -------- HINDI FONT (MANGAL) -------- */
     @font-face {
       font-family: 'Mangal';
-      /* RAILWAY FIX: Use direct filesystem path. 
-         Ensure the file is strictly named "MANGAL.TTF" (Case Sensitive on Linux!) */
+      /* RAILWAY FIX: Direct filesystem path */
       src: url('file:///app/static/fonts/MANGAL.TTF') format('truetype');
       font-weight: normal;
       font-style: normal;
@@ -30,21 +31,21 @@
       font-family: 'Mangal', serif;
     }
 
-    /* -------- HEADER -------- */
+    /* -------- HEADER (COMPACT) -------- */
     .jnpa-letterhead {
       position: relative;
-      margin-bottom: 6mm;
+      margin-bottom: 4mm; /* Reduced space below header */
     }
 
     .lh-row {
       display: grid;
-      grid-template-columns: 90px 1fr 90px;
+      grid-template-columns: 80px 1fr 80px;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
     }
 
     .lh-logo img {
-      max-height: 64px;
+      max-height: 55px; /* Slightly smaller logo */
     }
 
     .lh-title-wrap {
@@ -52,96 +53,101 @@
     }
 
     .lh-title-hindi {
-      font-size: 22px;
+      font-size: 18px; /* Reduced from 22px */
       font-weight: bold;
       color: #0b63a8;
       margin: 0;
+      line-height: 1.2;
     }
 
     .lh-title {
-      font-size: 26px;
+      font-size: 22px; /* Reduced from 26px */
       font-weight: bold;
       color: #0b63a8;
       margin: 0;
+      line-height: 1.2;
     }
 
     .lh-contact {
-      font-size: 7pt;
-      line-height: 1.15;
-      margin-top: 3px;
+      font-size: 6.5pt; /* Reduced from 7pt */
+      line-height: 1.1;
+      margin-top: 2px;
     }
 
     .iso-box {
       position: absolute;
       right: 0;
       top: 0;
-      font-size: 8pt;
+      font-size: 7pt;
       text-align: right;
+      line-height: 1.2;
     }
 
     .lh-divider {
-      margin-top: 5px;
+      margin-top: 4px;
       border-top: 2px solid #000;
     }
 
-    /* -------- CONTENT -------- */
+    /* -------- CONTENT (COMPACT) -------- */
     .meta {
       display: flex;
       justify-content: space-between;
-      font-size: 12pt;
-      margin-bottom: 10px;
+      font-size: 11pt; /* Reduced from 12pt */
+      margin-bottom: 6px;
     }
 
     .recipient {
-      font-size: 13pt;
-      margin-bottom: 12px;
+      font-size: 11.5pt; /* Reduced from 13pt */
+      margin-bottom: 8px;
+      line-height: 1.3;
     }
 
     .subject {
       text-align: center;
-      font-size: 15pt;
+      font-size: 13pt; /* Reduced from 15pt */
       font-weight: bold;
-      margin: 10px 0 12px 0;
+      margin: 6px 0 8px 0;
     }
 
     .salutation {
-      font-size: 13pt;
-      margin-bottom: 8px;
+      font-size: 11.5pt; /* Reduced from 13pt */
+      margin-bottom: 4px;
     }
 
     .body {
-      font-size: 13pt;
-      line-height: 1.35;
+      font-size: 11.5pt; /* Reduced from 13pt */
+      line-height: 1.3;
       text-align: justify;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
-    /* -------- CONDITIONS (COMPACT) -------- */
+    /* -------- CONDITIONS (VERY COMPACT) -------- */
     ol.conditions {
-      font-size: 12.8pt;
-      line-height: 1.32;
-      margin-left: 20px;
-      padding-left: 6px;
-      margin-bottom: 10px;
+      font-size: 11pt; /* Reduced from 12.8pt */
+      line-height: 1.25;
+      margin-left: 18px;
+      padding-left: 4px;
+      margin-bottom: 6px;
+      margin-top: 0;
     }
 
     ol.conditions li {
-      margin-bottom: 6px;
+      margin-bottom: 3px; /* Tighter list items */
       page-break-inside: avoid;
     }
 
     /* -------- SIGNATURE -------- */
     .signature-table {
       width: 100%;
-      margin-top: 18px;
-      font-size: 13pt;
+      margin-top: 10px; /* Reduced top margin */
+      font-size: 11.5pt; /* Reduced from 13pt */
     }
 
     .sig-left { text-align: left; }
     .sig-right { text-align: right; }
 
     .sig-author {
-      padding-top: 32px;
+      padding-top: 24px; /* Reduced space for signature */
       text-align: right;
       font-weight: bold;
     }
@@ -149,24 +155,23 @@
     /* -------- FOOTER (BOTTOM SAFE) -------- */
     .footer {
       border-top: 1px solid #000;
-      margin-top: 14px;
-      padding-top: 5px;
-      font-size: 9.5pt;
+      margin-top: 8px; /* Reduced from 14px */
+      padding-top: 4px;
+      font-size: 8.5pt; /* Reduced from 9.5pt */
       text-align: center;
-      line-height: 1.15;
+      line-height: 1.1;
     }
 
     .footer .small {
       display: block;
-      margin-top: 3px;
-      font-size: 9.5pt;
+      margin-top: 2px;
+      font-size: 8.5pt;
     }
   </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <div class="jnpa-letterhead">
   <div class="iso-box">
     ISO 9001 : 2015<br>
@@ -194,7 +199,6 @@
   <div class="lh-divider"></div>
 </div>
 
-<!-- BODY -->
 <div class="meta">
   <div>Ref: JN/TC/A/{{ letter_year }}</div>
   <div>Date: {{ issued_date }}</div>
@@ -243,7 +247,6 @@
   </tr>
 </table>
 
-<!-- FOOTER -->
 <div class="footer hindi">
       मुंबई कार्यालय : 1502, एक्सप्रेस टावर्स, एयर इंडिया बिल्डिंग के पास, रामनाथ गोयंका मार्ग, नरिमन प्वाइंट, मुंबई - 400021.
   <span class="small"> MUMBAI OFFICE : 1502, EXPRESS TOWERS, NEAR AIR INDIA BUILDING, RAMNATH GOENKA MARG, NARIMAN POINT, MUMBAI - 400021. TEL: (22) 6616 5600 · FAX: (22) 6743 1116  </span>
