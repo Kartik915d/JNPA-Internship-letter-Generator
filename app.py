@@ -7,6 +7,7 @@ from datetime import datetime
 from types import SimpleNamespace
 from functools import wraps
 from pathlib import Path
+from werkzeug.utils import secure_filename
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash,
