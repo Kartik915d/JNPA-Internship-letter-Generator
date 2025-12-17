@@ -4,17 +4,37 @@
   <meta charset="utf-8"/>
   <title>Internship Letter</title>
 
-  <style>
-    /* -------- PAGE SETUP -------- */
+ <style>
+    /* =====================================================
+       PAGE SETUP
+       ===================================================== */
     @page { size: A4; margin: 20mm 18mm 26mm 18mm; }
 
-    /* -------- HINDI FONT (MANGAL) -------- */
+    /* =====================================================
+       HINDI FONTS (WEASYPRINT SAFE)
+       ===================================================== */
+
+    /* Primary Hindi font */
     @font-face {
-      font-family: 'Mangal';
-      src: url('{{ url_for("static", filename="fonts/MANGAL.TTF") }}')
+      font-family: 'HindiPrimary';
+      src: url('{{ url_for("static", filename="fonts/NotoSansDevanagari-Regular.ttf") }}')
            format('truetype');
+      font-weight: normal;
+      font-style: normal;
     }
 
+    /* Fallback Hindi font */
+    @font-face {
+      font-family: 'HindiFallback';
+      src: url('{{ url_for("static", filename="fonts/MANGAL.TTF") }}')
+           format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* =====================================================
+       GLOBAL TYPOGRAPHY
+       ===================================================== */
     body {
       font-family: "Times New Roman", Times, serif;
       color: #000;
@@ -23,10 +43,12 @@
     }
 
     .hindi {
-      font-family: 'Mangal', serif;
+      font-family: 'HindiPrimary', 'HindiFallback', serif;
     }
 
-    /* -------- HEADER -------- */
+    /* =====================================================
+       HEADER
+       ===================================================== */
     .jnpa-letterhead {
       position: relative;
       margin-bottom: 6mm;
@@ -80,7 +102,9 @@
       border-top: 2px solid #000;
     }
 
-    /* -------- CONTENT -------- */
+    /* =====================================================
+       CONTENT
+       ===================================================== */
     .meta {
       display: flex;
       justify-content: space-between;
@@ -112,7 +136,9 @@
       margin-bottom: 10px;
     }
 
-    /* -------- CONDITIONS (COMPACT) -------- */
+    /* =====================================================
+       CONDITIONS
+       ===================================================== */
     ol.conditions {
       font-size: 12.8pt;
       line-height: 1.32;
@@ -126,7 +152,9 @@
       page-break-inside: avoid;
     }
 
-    /* -------- SIGNATURE -------- */
+    /* =====================================================
+       SIGNATURE
+       ===================================================== */
     .signature-table {
       width: 100%;
       margin-top: 18px;
@@ -142,7 +170,9 @@
       font-weight: bold;
     }
 
-    /* -------- FOOTER (BOTTOM SAFE) -------- */
+    /* =====================================================
+       FOOTER
+       ===================================================== */
     .footer {
       border-top: 1px solid #000;
       margin-top: 14px;
